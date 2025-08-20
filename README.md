@@ -1,152 +1,277 @@
-# ATProto Feed Generator
+# Mahoot - Time-Controlled Social Media Feed Generator
 
-This is a starter kit for creating ATProto Feed Generators. It's not feature complete, but should give you a good starting ground off of which to build and deploy a feed.
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 
-## Overview
+Mahoot is a BlueSky feed generator that implements client-side curation protocols to help users manage their social media consumption. It provides time-controlled social media experiences with fair followee exposure through "Mahoot Numbers."
 
-Feed Generators are services that provide custom algorithms to users through the AT Protocol.
+## 🌟 Features
 
-They work very simply: the server receives a request from a user's server and returns a list of [post URIs](https://atproto.com/specs/at-uri-scheme) with some optional metadata attached. Those posts are then hydrated into full views by the requesting server and sent back to the client. This route is described in the [`app.bsky.feed.getFeedSkeleton` lexicon](https://docs.bsky.app/docs/api/app-bsky-feed-get-feed-skeleton).
+- **⏰ Daily Post Limits**: Set custom daily consumption limits (1-1000 posts)
+- **🎯 Mahoot Numbers**: Guaranteed minimum posts per followee per day
+- **📈 Followee Amplification**: Amp up important voices or amp down prolific posters
+- **🎲 Random Subset Selection**: Prevents over-posting accounts from dominating feeds
+- **⚙️ User Preferences**: Customizable settings with persistence
+- **📊 Statistics & Insights**: Comprehensive usage analytics
+- **🔍 Rich Metadata**: Enhanced feed information for client applications
 
-A Feed Generator service can host one or more algorithms. The service itself is identified by DID, while each algorithm that it hosts is declared by a record in the repo of the account that created it. For instance, feeds offered by Bluesky will likely be declared in `@bsky.app`'s repo. Therefore, a given algorithm is identified by the at-uri of the declaration record. This declaration record includes a pointer to the service's DID along with some profile information for the feed.
+## 🚀 Quick Start
 
-The general flow of providing a custom algorithm to a user is as follows:
-- A user requests a feed from their server (PDS) using the at-uri of the declared feed
-- The PDS resolves the at-uri and finds the DID doc of the Feed Generator
-- The PDS sends a `getFeedSkeleton` request to the service endpoint declared in the Feed Generator's DID doc
-  - This request is authenticated by a JWT signed by the user's repo signing key
-- The Feed Generator returns a skeleton of the feed to the user's PDS
-- The PDS hydrates the feed (user info, post contents, aggregates, etc.)
-  - In the future, the PDS will hydrate the feed with the help of an App View, but for now, the PDS handles hydration itself
-- The PDS returns the hydrated feed to the user
+### Prerequisites
 
-For users, this should feel like visiting a page in the app. Once they subscribe to a custom algorithm, it will appear in their home interface as one of their available feeds.
+- Node.js 18+
+- Yarn package manager
+- BlueSky account
 
-## Getting Started
+### Installation
 
-We've set up this simple server with SQLite to store and query data. Feel free to switch this out for whichever database you prefer.
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-username/mahoot-feed-generator.git
+   cd mahoot-feed-generator
+   ```
 
-Next, you will need to do two things:
+2. **Install dependencies**:
+   ```bash
+   yarn install
+   ```
 
-1. Implement indexing logic in `src/subscription.ts`. 
-   
-   This will subscribe to the repo subscription stream on startup, parse events and index them according to your provided logic.
+3. **Configure environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your BlueSky credentials and DID
+   ```
 
-2. Implement feed generation logic in `src/algos`
+4. **Build and start**:
+   ```bash
+   yarn build
+   yarn start
+   ```
 
-   For inspiration, we've provided a very simple feed algorithm (`whats-alf`) that returns all posts related to the titular character of the TV show ALF. 
+5. **Publish to BlueSky**:
+   ```bash
+   yarn publishFeed
+   ```
 
-   You can either edit it or add another algorithm alongside it. The types are in place, and you will just need to return something that satisfies the `SkeletonFeedPost[]` type.
+## 🧪 Testing
 
-We've taken care of setting this server up with a did:web. However, you're free to switch this out for did:plc if you like - you may want to if you expect this Feed Generator to be long-standing and possibly migrating domains.
+Run the comprehensive test suite:
 
-### Deploying your feed
-Your feed will need to be accessible at the value supplied to the `FEEDGEN_HOSTNAME` environment variable.
+```bash
+# Run all tests
+yarn test
 
-The service must be set up to respond to HTTPS queries over port 443.
+# Run validation tests only
+yarn test:validation
 
-### Publishing your feed
-
-To publish your feed, go to the script at `scripts/publishFeedGen.ts` and fill in the variables at the top. Examples are included, and some are optional. To publish your feed generator, simply run `yarn publishFeed`.
-
-To update your feed's display data (name, avatar, description, etc.), just update the relevant variables and re-run the script.
-
-After successfully running the script, you should be able to see your feed from within the app, as well as share it by embedding a link in a post (similar to a quote post).
-
-## Running the Server
-
-Install dependencies with `yarn` and then run the server with `yarn start`. This will start the server on port 3000, or what's defined in `.env`. You can then watch the firehose output in the console and access the output of the default custom ALF feed at [http://localhost:3000/xrpc/app.bsky.feed.getFeedSkeleton?feed=at://did:example:alice/app.bsky.feed.generator/whats-alf](http://localhost:3000/xrpc/app.bsky.feed.getFeedSkeleton?feed=at://did:example:alice/app.bsky.feed.generator/whats-alf).
-
-## Some Details
-
-### Skeleton Metadata
-
-The skeleton that a Feed Generator puts together is, in its simplest form, a list of post URIs.
-
-```ts
-[
-  {post: 'at://did:example:1234/app.bsky.feed.post/1'},
-  {post: 'at://did:example:1234/app.bsky.feed.post/2'},
-  {post: 'at://did:example:1234/app.bsky.feed.post/3'}
-]
+# Run integration tests only
+yarn test:integration
 ```
 
-However, we include an additional location to attach some context. Here is the full schema:
+## 🐳 Docker Deployment
 
-```ts
-type SkeletonItem = {
-  post: string // post URI
+### Quick Start with Docker
 
-  // optional reason for inclusion in the feed
-  // (generally to be displayed in client)
-  reason?: Reason
-}
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
 
-// for now, the only defined reason is a repost, but this is open to extension
-type Reason = ReasonRepost
-
-type ReasonRepost = {
-  $type: 'app.bsky.feed.defs#skeletonReasonRepost'
-  repost: string // repost URI
-}
+# Or build and run manually
+docker build -t mahoot-feed-generator .
+docker run -d -p 3000:3000 --env-file .env mahoot-feed-generator
 ```
 
-This metadata serves two purposes:
+## 📖 How It Works
 
-1. To aid the PDS in hydrating all relevant post information
-2. To give a cue to the client in terms of context to display when rendering a post
+### Core Concepts
 
-### Authentication
+1. **Mahoot Numbers**: Each followee gets a guaranteed minimum number of posts per day
+2. **Daily Limits**: Users set a maximum number of posts they want to consume daily
+3. **Amplification**: Users can "amp up" important voices or "amp down" prolific posters
+4. **Random Selection**: For over-posting accounts, posts are randomly selected to prevent domination
 
-If you are creating a generic feed that does not differ for different users, you do not need to check auth. But if a user's state (such as follows or likes) is taken into account, we _strongly_ encourage you to validate their auth token.
+### Algorithm Flow
 
-Users are authenticated with a simple JWT signed by the user's repo signing key.
+1. **User Authentication**: JWT-based authentication for personalized feeds
+2. **Preference Loading**: Load user's daily limits and Mahoot numbers
+3. **Followee Processing**: Process each followee based on their Mahoot number
+4. **Post Selection**: Randomly select posts from over-posting accounts
+5. **Limit Enforcement**: Ensure daily limits are respected
+6. **Statistics Tracking**: Record viewing patterns for insights
 
-This JWT header/payload takes the format:
-```ts
-const header = {
-  type: "JWT",
-  alg: "ES256K" // (key algorithm) - in this case secp256k1
-}
-const payload = {
-  iss: "did:example:alice", // (issuer) the requesting user's DID
-  aud: "did:example:feedGenerator", // (audience) the DID of the Feed Generator
-  exp: 1683643619 // (expiration) unix timestamp in seconds
-}
+### Database Schema
+
+- **posts**: Indexed posts from the firehose
+- **user_preferences**: User settings and limits
+- **followee_relationships**: Custom Mahoot numbers per followee
+- **post_statistics**: Post viewing history
+- **daily_stats**: Daily usage statistics
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```env
+# BlueSky Configuration
+BLUESKY_IDENTIFIER=your-username.bsky.social
+BLUESKY_PASSWORD=your-app-password
+
+# Feed Generator Configuration
+SERVICE_DID=did:web:your-domain.com
+PUBLISHER_DID=did:plc:your-did
+
+# Database Configuration
+SQLITE_LOCATION=./data/mahoot.db
+
+# Server Configuration
+PORT=3000
+HOST=0.0.0.0
 ```
 
-We provide utilities for verifying user JWTs in the `@atproto/xrpc-server` package, and you can see them in action in `src/auth.ts`.
+### API Endpoints
 
-### Pagination
-You'll notice that the `getFeedSkeleton` method returns a `cursor` in its response and takes a `cursor` param as input.
+#### Feed Generation
+- `GET /xrpc/app.bsky.feed.getFeedSkeleton` - Generate Mahoot feed
+- `GET /xrpc/app.bsky.feed.describeFeedGenerator` - Feed metadata
 
-This cursor is treated as an opaque value and fully at the Feed Generator's discretion. It is simply passed through the PDS directly to and from the client.
+#### User Preferences
+- `GET /xrpc/com.mahoot.getPreferences` - Get user preferences
+- `POST /xrpc/com.mahoot.putPreferences` - Update preferences
+- `GET /xrpc/com.mahoot.getFeedConfig` - Get feed configuration
 
-We strongly encourage that the cursor be _unique per feed item_ to prevent unexpected behavior in pagination.
+#### Followee Management
+- `GET /xrpc/com.mahoot.getFollowees` - Get followee list
+- `POST /xrpc/com.mahoot.updateFollowee` - Update followee Mahoot number
+- `POST /xrpc/com.mahoot.removeFollowee` - Remove followee
 
-We recommend, for instance, a compound cursor with a timestamp + a CID:
-`1683654690921::bafyreia3tbsfxe3cc75xrxyyn6qc42oupi73fxiox76prlyi5bpx7hr72u`
+#### Statistics
+- `GET /xrpc/com.mahoot.getStats` - Get user statistics
 
-## Suggestions for Implementation
+## 📊 Usage Examples
 
-How a feed generator fulfills the `getFeedSkeleton` request is completely at their discretion. At the simplest end, a Feed Generator could supply a "feed" that only contains some hardcoded posts.
+### Setting Daily Limits
 
-For most use cases, we recommend subscribing to the firehose at `com.atproto.sync.subscribeRepos`. This websocket will send you every record that is published on the network. Since Feed Generators do not need to provide hydrated posts, you can index as much or as little of the firehose as necessary.
+```bash
+curl -X POST http://localhost:3000/xrpc/com.mahoot.putPreferences \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"daily_post_limit": 50}'
+```
 
-Depending on your algorithm, you likely do not need to keep posts around for long. Unless your algorithm is intended to provide "posts you missed" or something similar, you can likely garbage collect any data that is older than 48 hours.
+### Amplifying a Followee
 
-Some examples:
+```bash
+curl -X POST http://localhost:3000/xrpc/com.mahoot.updateFollowee \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"followee_did": "did:plc:example", "mahoot_number": 10}'
+```
 
-### Reimplementing What's Hot
-To reimplement "What's Hot", you may subscribe to the firehose and filter for all posts and likes (ignoring profiles/reposts/follows/etc.). You would keep a running tally of likes per post and when a PDS requests a feed, you would send the most recent posts that pass some threshold of likes.
+### Getting Statistics
 
-### A Community Feed
-You might create a feed for a given community by compiling a list of DIDs within that community and filtering the firehose for all posts from users within that list.
+```bash
+curl -X GET http://localhost:3000/xrpc/com.mahoot.getStats \
+  -H "Authorization: Bearer YOUR_JWT"
+```
 
-### A Topical Feed
-To implement a topical feed, you might filter the algorithm for posts and pass the post text through some filtering mechanism (an LLM, a keyword matcher, etc.) that filters for the topic of your choice.
+## 🏗️ Architecture
 
-## Community Feed Generator Templates
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   BlueSky API   │    │  Firehose Feed  │    │   SQLite DB     │
+│                 │    │                 │    │                 │
+│ • Authentication│◄──►│ • Real-time     │◄──►│ • Posts         │
+│ • Feed Requests │    │   indexing      │    │ • User Prefs    │
+│ • Publishing    │    │ • Follow events │    │ • Statistics    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Mahoot Feed Generator                        │
+│                                                                 │
+│ • User Authentication & Preferences                            │
+│ • Mahoot Number Calculations                                   │
+│ • Feed Generation Algorithm                                    │
+│ • Statistics & Analytics                                       │
+│ • API Endpoints                                                │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-- [Python](https://github.com/MarshalX/bluesky-feed-generator) - [@MarshalX](https://github.com/MarshalX)
-- [Ruby](https://github.com/mackuba/bluesky-feeds-rb) - [@mackuba](https://github.com/mackuba)
+## 🔍 Monitoring
+
+### Health Checks
+
+- `GET /health` - Basic health check
+- `GET /ready` - Readiness check (database connectivity)
+
+### Key Metrics
+
+- Feed generation latency
+- Database query performance
+- User engagement rates
+- Daily post consumption patterns
+
+## 🛠️ Development
+
+### Project Structure
+
+```
+src/
+├── algos/           # Feed generation algorithms
+├── auth.ts          # Authentication utilities
+├── config.ts        # Configuration management
+├── db/              # Database schema and migrations
+├── index.ts         # Application entry point
+├── lexicon/         # AT Protocol type definitions
+├── methods/         # XRPC method handlers
+├── server.ts        # Express server setup
+├── statistics.ts    # Analytics and statistics
+├── subscription.ts  # Firehose subscription
+└── user-management.ts # User preference management
+```
+
+### Adding New Features
+
+1. **Database Changes**: Add migrations in `src/db/migrations.ts`
+2. **New Algorithms**: Create files in `src/algos/`
+3. **API Endpoints**: Add methods in `src/methods/`
+4. **Statistics**: Extend `src/statistics.ts`
+
+## 🚀 Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy Options
+
+- **Railway**: Connect repository, set env vars, deploy
+- **Render**: Create web service, connect repo, deploy
+- **DigitalOcean**: App platform with automatic deployments
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built on the [AT Protocol](https://atproto.com/)
+- Inspired by the original [Mahoot concept](Mahoot-Readme.txt)
+- Uses the BlueSky feed generator starter kit as foundation
+
+## 📞 Support
+
+- Create an issue on GitHub
+- Check the [deployment guide](DEPLOYMENT.md)
+- Review the test suite for examples
+
+---
+
+**Mahoot** - Take control of your social media time! ⏰✨

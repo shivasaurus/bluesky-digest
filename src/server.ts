@@ -5,6 +5,7 @@ import { DidResolver, MemoryCache } from '@atproto/identity'
 import { createServer } from './lexicon'
 import feedGeneration from './methods/feed-generation'
 import describeGenerator from './methods/describe-generator'
+import userPreferences from './methods/user-preferences'
 import { createDb, Database, migrateToLatest } from './db'
 import { FirehoseSubscription } from './subscription'
 import { AppContext, Config } from './config'
@@ -55,8 +56,38 @@ export class FeedGenerator {
     }
     feedGeneration(server, ctx)
     describeGenerator(server, ctx)
+    userPreferences(server, ctx)
     app.use(server.xrpc.router)
     app.use(wellKnown(ctx))
+    
+    // Health check endpoints
+    app.get('/health', (req, res) => {
+      res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        service: 'mahoot-feed-generator',
+        version: '1.0.0'
+      })
+    })
+    
+    app.get('/ready', async (req, res) => {
+      try {
+        // Test database connectivity
+        await db.selectFrom('post').select('uri').limit(1).execute()
+        res.status(200).json({
+          status: 'ready',
+          timestamp: new Date().toISOString(),
+          database: 'connected'
+        })
+      } catch (error) {
+        res.status(503).json({
+          status: 'not ready',
+          timestamp: new Date().toISOString(),
+          database: 'disconnected',
+          error: error.message
+        })
+      }
+    })
 
     return new FeedGenerator(app, db, firehose, cfg)
   }

@@ -19,17 +19,25 @@ export default function (server: Server, ctx: AppContext) {
         'UnsupportedAlgorithm',
       )
     }
-    /**
-     * Example of how to check auth if giving user-specific results:
-     *
-     * const requesterDid = await validateAuth(
-     *   req,
-     *   ctx.cfg.serviceDid,
-     *   ctx.didResolver,
-     * )
-     */
 
-    const body = await algo(ctx, params)
+    // For Mahoot algorithm, we need user authentication for personalized feeds
+    let requesterDid: string | undefined
+    if (feedUri.rkey === 'mahoot') {
+      try {
+        requesterDid = await validateAuth(
+          req,
+          ctx.cfg.serviceDid,
+          ctx.didResolver,
+        )
+      } catch (error) {
+        throw new InvalidRequestError(
+          'Authentication required for Mahoot feed',
+          'AuthRequired',
+        )
+      }
+    }
+
+    const body = await algo(ctx, params, requesterDid)
     return {
       encoding: 'application/json',
       body: body,
